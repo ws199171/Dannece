@@ -8,6 +8,7 @@ import android.graphics.RectF;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.View;
 
 import com.ssw.stockchart.data.BaseCharData;
@@ -124,6 +125,8 @@ public abstract class BaseCharView<T extends BaseCharData> extends View {
      */
     protected int stockType = 0;
 
+    private DisplayMetrics mMetrics;
+
 
     public BaseCharView(@NonNull Context context) {
         this(context, null);
@@ -136,11 +139,19 @@ public abstract class BaseCharView<T extends BaseCharData> extends View {
     public BaseCharView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         this.mContext = context;
+        mMetrics = context.getResources().getDisplayMetrics();
         this.mBackgroundPaint = new Paint();
         this.mBackgroundPaint.setAntiAlias(true);
         this.mBackgroundPaint.setColor(Color.GRAY);
         this.mBackgroundPaint.setStrokeWidth(1.5f);
         this.mBackgroundPaint.setStyle(Paint.Style.STROKE);
+    }
+
+    public float dp2Px(float dp) {
+        if (mMetrics == null) {
+            return dp;
+        }
+        return dp * mMetrics.density;
     }
 
 

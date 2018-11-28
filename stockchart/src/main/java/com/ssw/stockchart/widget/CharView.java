@@ -2,7 +2,6 @@ package com.ssw.stockchart.widget;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.support.annotation.NonNull;
@@ -10,7 +9,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -192,16 +190,6 @@ public class CharView extends BaseCharView {
     private BaseChartTouchListener.ChartZoomState lastChartZoomState = charZoomState;
 
     /**
-     * 手势管理
-     */
-    private ScaleGestureDetector mScaleGestureDetector;
-    private GestureDetectorCompat mGestureDetector;
-    private OverScroller mScroller;
-    private Zoomer mZoomer;
-
-    private DisplayMetrics mMetrics;
-
-    /**
      * 开始缩放的时候双指距离
      */
     private float lastSpanX;
@@ -212,90 +200,6 @@ public class CharView extends BaseCharView {
      * the minimum distance between the pointers that will trigger a zoom gesture
      */
     private float mMinScalePointerDistance;
-
-    /**
-     * 各种手势监听
-     */
-    private final GestureDetector.SimpleOnGestureListener mGestureListener = new GestureDetector.SimpleOnGestureListener() {
-
-        @Override
-        public boolean onSingleTapUp(MotionEvent e) {
-            return super.onSingleTapUp(e);
-        }
-
-        @Override
-        public void onLongPress(MotionEvent e) {
-            super.onLongPress(e);
-        }
-
-        @Override
-        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-            return super.onScroll(e1, e2, distanceX, distanceY);
-        }
-
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            return super.onFling(e1, e2, velocityX, velocityY);
-        }
-
-        @Override
-        public void onShowPress(MotionEvent e) {
-            super.onShowPress(e);
-        }
-
-        @Override
-        public boolean onDown(MotionEvent e) {
-            return super.onDown(e);
-        }
-
-        @Override
-        public boolean onDoubleTap(MotionEvent e) {
-            return super.onDoubleTap(e);
-        }
-
-        @Override
-        public boolean onDoubleTapEvent(MotionEvent e) {
-            return super.onDoubleTapEvent(e);
-        }
-
-        @Override
-        public boolean onSingleTapConfirmed(MotionEvent e) {
-            return super.onSingleTapConfirmed(e);
-        }
-
-        @Override
-        public boolean onContextClick(MotionEvent e) {
-            return super.onContextClick(e);
-        }
-    };
-
-    /**
-     * 滑动监听
-     */
-    private final ScaleGestureDetector.SimpleOnScaleGestureListener mScaleGestureListener = new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-
-        @Override
-        public boolean onScale(ScaleGestureDetector detector) {
-            return true;
-        }
-
-        @Override
-        public boolean onScaleBegin(ScaleGestureDetector detector) {
-            return true;
-        }
-
-
-        @Override
-        public void onScaleEnd(ScaleGestureDetector detector) {
-        }
-    };
-
-
-    @Override
-    public void computeScroll() {
-        super.computeScroll();
-
-    }
 
     public CharView(@NonNull Context context) {
         this(context, null);
@@ -311,24 +215,8 @@ public class CharView extends BaseCharView {
     }
 
     private void init(Context context) {
-        // Sets up interactions
-        mScaleGestureDetector = new ScaleGestureDetector(context, mScaleGestureListener);
-        mGestureDetector = new GestureDetectorCompat(context, mGestureListener);
-        mScroller = new OverScroller(context);
-        mZoomer = new Zoomer(context);
-
-        Resources resource = context.getResources();
-        mMetrics = resource.getDisplayMetrics();
-        mMinScalePointerDistance = convertDpToPixel(3.5f);
-
+        mMinScalePointerDistance = dp2Px(3.5f);
         chartTouchListener = new LineChartTouchListener(this);
-    }
-
-    public float convertDpToPixel(float dp) {
-        if (mMetrics == null) {
-            return dp;
-        }
-        return dp * mMetrics.density;
     }
 
 
@@ -454,12 +342,7 @@ public class CharView extends BaseCharView {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-//        boolean retVal = mScaleGestureDetector.onTouchEvent(event);
-//        retVal = mGestureDetector.onTouchEvent(event) || retVal;
-//        return retVal || super.onTouchEvent(event);
-
         super.onTouchEvent(event);
-
         if (chartTouchListener == null || getData() == null) {
             return false;
         }
@@ -476,7 +359,6 @@ public class CharView extends BaseCharView {
      */
     @Override
     public void resetBaseValues() {
-
         this.startX = 0;
         if (data.dataSize() > showNumbers) {
             this.drawStatIndex = data.dataSize() - showNumbers;
@@ -486,6 +368,14 @@ public class CharView extends BaseCharView {
             this.drawEndIndex = data.dataSize();
         }
         this.cellWidth = coordinateWidth / showNumbers;
+    }
+
+    @Override
+    public void computeScroll() {
+        super.computeScroll();
+        if (chartTouchListener != null) {
+            chartTouchListener.computeScroll();
+        }
     }
 
 }

@@ -19,11 +19,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
 
     /**
-     * 先关图表
-     */
-    private BaseCharView charView;
-
-    /**
      * 当前的手势状态
      */
     private BaseChartTouchListener.ChartGesture chartGesture = BaseChartTouchListener.ChartGesture.NONE;
@@ -88,7 +83,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
 
     public LineChartTouchListener(@NonNull BaseCharView charView) {
-        this.charView = charView;
+        super(charView);
     }
 
     /**
@@ -362,7 +357,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     this.startX = 0;
                 }
             }
-
             Log.i("###", "ZoomOut tempStatIndex =  " + tempStatIndex + " tempEndIndex =  " + tempEndIndex + " decimal " + decimal + " leftVariety " + leftVariety + " showNumbers = " + showNumbers);
         }
     }
@@ -385,6 +379,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        gestureDetector.onTouchEvent(event);
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 break;
@@ -398,26 +393,24 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     parent.requestDisallowInterceptTouchEvent(true);
                 }
                 if (event.getPointerCount() >= 2) {
-                    // get the distance between the pointers of the touch event
                     float totalDist = spacing(event);
                     if (totalDist > mMinScalePointerDistance) {
                         float xDist = getXDist(event);
                         float scaleX = xDist / mSavedXDist;
                         if (scaleX > 1) {
                             //放大
-                            chartGesture = BaseChartTouchListener.ChartGesture.ZOOM_OUT;
+                            chartGesture = ChartGesture.ZOOM_OUT;
                         } else {
                             //缩小
-                            chartGesture = BaseChartTouchListener.ChartGesture.ZOOM_IN;
+                            chartGesture = ChartGesture.ZOOM_IN;
                         }
-                        Log.i("###", "--------onTouchEvent--------- scaleX =" + scaleX + " chartGesture " + chartGesture + " mSavedXDist " + mSavedXDist + " xDist " + xDist);
                         computeCellWidth(mTouchPointCenter.x, scaleX);
-                        charView.resetDrawData(true, this.cellWidth, this.drawStatIndex, this.drawEndIndex, this.showNumbers, this.startX);
+                        invalidateChart(true);
                     }
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                chartGesture = BaseChartTouchListener.ChartGesture.NONE;
+                chartGesture = ChartGesture.NONE;
                 break;
             case MotionEvent.ACTION_POINTER_UP:
                 break;
@@ -427,5 +420,171 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                 break;
         }
         return true;
+    }
+
+
+    @Override
+    public boolean onDown(MotionEvent e) {
+        mScroller.forceFinished(true);
+        return true;
+    }
+
+    @Override
+    public void onLongPress(MotionEvent e) {
+        Log.i("###", "------onLongPress-------");
+        super.onLongPress(e);
+    }
+
+    @Override
+    public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+        Log.i("###", "------onScroll-------  distanceX =" + distanceX + " distanceY = " + distanceY);
+        boolean invalidate = scroll(distanceX);
+        if (invalidate) {
+            chartGesture = ChartGesture.DRAG;
+            invalidateChart(true);
+        }
+        return invalidate;
+    }
+
+    @Override
+    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+        Log.i("###", "------onFling-------");
+        fling((int) -velocityX, (int) -velocityY);
+        return true;
+    }
+
+    @Override
+    public void fling(int velocityX, int velocityY) {
+        invalidateChart(true);
+    }
+
+    @Override
+    public boolean scroll(float distanceX) {
+        if (distanceX < 0) {
+            //向右滑动
+            if (drawStatIndex == 0) {
+                //已经是左极限
+                return false;
+            } else {
+                if (startX == 0) {
+                    float dragNumber = (-distanceX) / this.cellWidth;
+                    if (dragNumber > 1) {
+                        //拖动的条目数大于1
+                        int number = (int) dragNumber;
+                        float distance = dragNumber - number;
+                        this.startX = this.cellWidth * (distance - 1);
+                        this.drawStatIndex = drawStatIndex - number;
+                        this.drawEndIndex = drawEndIndex - number;
+                    } else {
+                        this.startX = distanceX;
+                        this.drawStatIndex = drawStatIndex - 1;
+                        this.drawEndIndex = drawEndIndex - 1;
+                    }
+                } else {
+                    float distanceDragX = distanceX - startX;
+                    if (distanceDragX < 0) {
+                        //如果  < 0 证明当前 drawStatIndex 已经发生了变化，需要调整大小
+                        float dragNumber = (-distanceX) / this.cellWidth;
+                        if (dragNumber > 1) {
+                            //拖动的条目数大于1
+                            int number = (int) dragNumber;
+                            float distance = dragNumber - number;
+                            this.startX = this.cellWidth * (distance - 1);
+                            this.drawStatIndex = drawStatIndex - number;
+                            this.drawEndIndex = drawEndIndex - number;
+                        } else {
+                            this.startX = distanceDragX;
+                            this.drawStatIndex = drawStatIndex - 1;
+                            this.drawEndIndex = drawEndIndex - 1;
+                        }
+                    } else if (distanceDragX == 0) {
+                        this.startX = 0;
+                    } else {
+                        this.startX = -distanceDragX;
+                    }
+                }
+                //校验是否越界
+                if (drawStatIndex < 0) {
+                    drawStatIndex = 0;
+                    drawEndIndex = drawStatIndex + showNumbers;
+                    this.startX = 0;
+                }
+            }
+        } else {
+            //向左滑动
+            if (drawEndIndex >= charView.getData().dataSize()) {
+                //已经是右极限
+                return false;
+            } else {
+                //未发生下标变化，只需要修改偏移
+                if (distanceX < (cellWidth + startX)) {
+                    startX = startX - distanceX;
+                } else {
+                    if (startX == 0) {
+                        float dragNumber = distanceX / this.cellWidth;
+                        float numberDecimal = dragNumber - (int) dragNumber;
+                        if (numberDecimal > 0) {
+                            this.startX = -distanceX % this.cellWidth;
+                            this.drawStatIndex = drawStatIndex + (int) dragNumber + 1;
+                            this.drawEndIndex = drawEndIndex + (int) dragNumber + 1;
+                        } else {
+                            this.startX = 0;
+                            this.drawStatIndex = drawStatIndex + dragNumber;
+                            this.drawEndIndex = drawEndIndex + dragNumber;
+                        }
+                    } else {
+                        float distanceDragX = distanceX - (cellWidth + startX);
+                        if (distanceDragX == 0) {
+                            this.startX = 0;
+                            this.drawStatIndex = drawStatIndex + 1;
+                            this.drawEndIndex = drawEndIndex + 1;
+                        } else if (distanceDragX > 0) {
+                            //当前坐标肯定发生了变化
+                            float dragNumber = distanceDragX / this.cellWidth;
+                            float numberDecimal = dragNumber - (int) dragNumber;
+                            if (numberDecimal > 0) {
+                                this.startX = -distanceX % this.cellWidth;
+                                this.drawStatIndex = drawStatIndex + (int) dragNumber + 2;
+                                this.drawEndIndex = drawEndIndex + (int) dragNumber + 2;
+                            } else {
+                                this.startX = 0;
+                                this.drawStatIndex = drawStatIndex + dragNumber + 1;
+                                this.drawEndIndex = drawEndIndex + dragNumber + 1;
+                            }
+                        } else if (distanceDragX < 0) {
+                            this.startX = startX - distanceX;
+                        }
+                    }
+                }
+            }
+
+            //校验是否越界
+            if (drawEndIndex >= charView.getData().dataSize()) {
+                drawEndIndex = charView.getData().dataSize();
+                drawStatIndex = drawEndIndex - showNumbers;
+                this.startX = 0;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public void computeScroll() {
+        Log.i("###", "------computeScroll-------");
+        if (mScroller.computeScrollOffset()) {
+
+        }
+    }
+
+    /**
+     * 刷新图表
+     *
+     * @param invalidate -
+     */
+    private void invalidateChart(boolean invalidate) {
+        if (charView != null) {
+            charView.resetDrawData(invalidate, this.cellWidth, this.drawStatIndex, this.drawEndIndex, this.showNumbers, this.startX);
+        }
     }
 }
