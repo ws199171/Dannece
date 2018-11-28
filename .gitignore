@@ -56,3 +56,8 @@ app/build/
 .idea/vcs.xml
 .idea/workspace.xml
 local.properties
+stockchart/.gitignore
+stockchart/build
+stockchart/proguard-rules.pro
+stockchart/stockchart.iml
+stockchart/libs/

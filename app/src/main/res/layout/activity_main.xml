@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     tools:context="chart.demo.ssw.MainActivity">
 
-    <chart.demo.ssw.widget.CharView
+    <com.ssw.stockchart.widget.CharView
         android:id="@+id/charView"
         android:layout_margin="20dp"
         android:layout_width="match_parent"

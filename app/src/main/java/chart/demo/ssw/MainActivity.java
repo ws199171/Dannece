@@ -6,17 +6,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.Button;
 
+import com.ssw.stockchart.data.KlineChartData;
+import com.ssw.stockchart.render.BaseRenderer;
+import com.ssw.stockchart.render.BrokenLineRenderer;
+import com.ssw.stockchart.render.CandleRenderer;
+import com.ssw.stockchart.render.HistogramRenderer;
+import com.ssw.stockchart.render.XAxisRenderer;
+import com.ssw.stockchart.render.YAxisRenderer;
+import com.ssw.stockchart.widget.CharView;
+
 import java.util.Arrays;
 
 import chart.demo.ssw.com.interchart.R;
-import chart.demo.ssw.data.KlineChartData;
-import chart.demo.ssw.render.BaseRenderer;
-import chart.demo.ssw.render.BrokenLineRenderer;
-import chart.demo.ssw.render.CandleRenderer;
-import chart.demo.ssw.render.HistogramRenderer;
-import chart.demo.ssw.render.XAxisRenderer;
-import chart.demo.ssw.render.YAxisRenderer;
-import chart.demo.ssw.widget.CharView;
 
 public class MainActivity extends AppCompatActivity {
 
