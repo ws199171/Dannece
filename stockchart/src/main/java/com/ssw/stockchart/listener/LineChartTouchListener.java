@@ -225,7 +225,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     drawStatIndex = tempStatIndex;
                 }
                 this.drawEndIndex = this.drawStatIndex + CharView.MAX_KLINE_NUMBER;
-
                 if (this.drawEndIndex >= charView.getData().dataSize()) {
                     this.drawEndIndex = charView.getData().dataSize();
                 }
@@ -449,12 +448,17 @@ public class LineChartTouchListener extends BaseChartTouchListener {
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         Log.i("###", "------onFling-------");
-        fling((int) -velocityX, (int) -velocityY);
+        fling((int) e2.getX(), (int) -velocityX, (int) -velocityY);
         return true;
     }
 
+    private int flingCurrX = 0;
+
     @Override
-    public void fling(int velocityX, int velocityY) {
+    public void fling(int startX, int velocityX, int velocityY) {
+        flingCurrX = startX;
+        mScroller.forceFinished(true);
+        mScroller.fling(startX, 0, velocityX, 0, 1, 100 * 1000, 0, 0);
         invalidateChart(true);
     }
 
@@ -571,9 +575,16 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
     @Override
     public void computeScroll() {
-        Log.i("###", "------computeScroll-------");
+        boolean invalidate = false;
         if (mScroller.computeScrollOffset()) {
-
+            int currX = mScroller.getCurrX();
+            int distanceX = currX - flingCurrX;
+            Log.i("###", "------computeScroll------- distanceX " + distanceX);
+            invalidate = scroll(distanceX);
+            flingCurrX = currX;
+        }
+        if (invalidate) {
+            invalidateChart(true);
         }
     }
 

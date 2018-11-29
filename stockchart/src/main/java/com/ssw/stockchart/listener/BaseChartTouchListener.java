@@ -122,10 +122,11 @@ public abstract class BaseChartTouchListener<T extends BaseCharView<?>> extends 
     /**
      * 用于计算惯性滑动
      *
+     * @param startX    - 开始fling的X位置
      * @param velocityX - X轴速度
      * @param velocityY - Y轴速度
      */
-    public abstract void fling(int velocityX, int velocityY);
+    public abstract void fling(int startX, int velocityX, int velocityY);
 
 
     /**
