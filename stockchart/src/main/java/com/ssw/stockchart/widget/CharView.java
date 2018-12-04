@@ -6,17 +6,11 @@ import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
-import android.widget.OverScroller;
 
-import com.ssw.stockchart.gestures.Zoomer;
-import com.ssw.stockchart.listener.BaseChartTouchListener;
 import com.ssw.stockchart.listener.LineChartTouchListener;
 import com.ssw.stockchart.render.BaseRenderer;
 
@@ -99,7 +93,6 @@ public class CharView extends BaseCharView {
      */
     private boolean isHasLrRecover = false;
 
-    private float preAnimatedValue = 0.0f;
 
     /**
      * 单元格的宽度
@@ -121,85 +114,8 @@ public class CharView extends BaseCharView {
      */
     protected float startX = 0.0f;
 
-    /**
-     * 固定参照点单元格数据索引
-     */
-    protected int fixedIndex;
-
-    /**
-     * 固定参照点单元格 X 起始坐标
-     */
-    protected float fixedCellX;
-
-    /**
-     * 左边的个数
-     */
-    protected int leftCount;
-
-    /**
-     * 右边的个数;
-     */
-    protected int rightCount;
-
-    /**
-     * 固定参照点的类型
-     */
-    protected BaseChartTouchListener.ChartDrawIndex charDrawIndex;
-
-    /**
-     * 两手指第一次触屏的间距
-     */
-    private float firstTowPDistance = 0.0f;
-
-    /**
-     * 第一次的单元格的宽度
-     */
-    private float firstCellWidth = 0.0f;
-
-    /**
-     * 最小手指间距离
-     */
-    private static final int MIN_FINGER_DISTANCE = 10;
-
-
-    private float downStartX;
-
-    /**
-     * 两指间距离
-     */
-    private float distance = 0.0f;
-
-    /**
-     * 滑动时间
-     */
-    private long scrollEventTimeMillis = 0;
-
-    /**
-     * 双指滑动时间
-     */
-    private long towPointerScrollTimeMillis = 0;
-
-    /**
-     * 当前缩放状态
-     */
-    private BaseChartTouchListener.ChartZoomState charZoomState = BaseChartTouchListener.ChartZoomState.NORMAL;
-
-    /**
-     * 上次缩放状态
-     */
-    private BaseChartTouchListener.ChartZoomState lastChartZoomState = charZoomState;
-
-    /**
-     * 开始缩放的时候双指距离
-     */
-    private float lastSpanX;
 
     private LineChartTouchListener chartTouchListener;
-
-    /**
-     * the minimum distance between the pointers that will trigger a zoom gesture
-     */
-    private float mMinScalePointerDistance;
 
     public CharView(@NonNull Context context) {
         this(context, null);
@@ -215,7 +131,6 @@ public class CharView extends BaseCharView {
     }
 
     private void init(Context context) {
-        mMinScalePointerDistance = dp2Px(3.5f);
         chartTouchListener = new LineChartTouchListener(this);
     }
 

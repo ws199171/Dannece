@@ -2,9 +2,7 @@ package com.ssw.stockchart.listener;
 
 import android.graphics.PointF;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.ViewParent;
 
 import com.ssw.stockchart.widget.BaseCharView;
@@ -154,7 +152,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         }
         //缩放位置权重
         float scalingWeight = focusXInt / showNumbers;
-        Log.i("###", "-------computeCellWidth---  focusX = " + focusX + " spanXRatio = " + spanXRatio + " scalingWeight = " + scalingWeight + " cellWidth = " + cellWidth);
         computeDrawIndex2(realCentFocusX, scalingWeight, formerLeftVariety, formerRightVariety);
     }
 
@@ -165,7 +162,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         float leftVariety = (realCentFocusX - this.cellWidth / 2) / this.cellWidth;
         float rightVariety = (this.coordinateWidth - realCentFocusX - this.cellWidth / 2) / this.cellWidth;
         float nowShowNumber = (float) Math.ceil(leftVariety) + (float) Math.ceil(rightVariety) + 1f;
-        Log.i("###", "-- computeDrawIndex2 --   nowShowNumber = " + nowShowNumber + " charZoomState = " + charZoomState + " chartGesture = " + chartGesture + " leftVariety " + leftVariety + " formerLeftVariety " + formerLeftVariety);
         //判断当前显示的数量和数据长度的大小
         if (nowShowNumber > charView.getData().dataSize()) {
             //当前需要绘制的数量，不足以完全铺满屏幕
@@ -189,7 +185,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
             //如果是放大
             else if (chartGesture == BaseChartTouchListener.ChartGesture.ZOOM_OUT) {
                 computeZoomOutProcess(nowShowNumber, differenceShowNumber, scalingWeight, leftVariety, rightVariety, formerLeftVariety);
-                Log.i("###", " ZOOM_OUT  drawStartIndex  = " + drawStartIndex + " drawEndIndex = " + drawEndIndex);
             }
         }
     }
@@ -219,7 +214,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                 float showVariety = CharView.MAX_KLINE_NUMBER - showDifference;
                 this.startX = 0;
                 float tempStatIndex = this.drawStartIndex - (int) Math.ceil(showVariety * scalingWeight);
-                Log.i("###", " tempStatIndex --- " + "  illegal = " + illegal + " tempStatIndex " + tempStatIndex);
                 if (tempStatIndex < 0) {
                     drawStartIndex = 0;
                 } else {
@@ -237,10 +231,8 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                 int leftVarietyInt = (int) Math.ceil(leftVariety);
                 float tempStatIndex = this.drawStartIndex - (leftVarietyInt - (int) Math.ceil(formerLeftVariety));
                 float tempEndIndex = tempStatIndex + showNumbers;
-                Log.i("###", " ZoomIn tempStatIndex =  " + tempStatIndex + " tempEndIndex =  " + tempEndIndex + " decimal " + decimal + " leftVariety " + leftVariety + " showNumbers = " + showNumbers);
                 computeZoomIn(tempStatIndex, tempEndIndex, decimal, leftVariety - leftVarietyInt);
             }
-            Log.i("###", "   ZOOM_IN  drawStartIndex  = " + drawStartIndex + " drawEndIndex = " + drawEndIndex);
         }
     }
 
@@ -284,7 +276,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     }
                 }
             }
-            Log.i("###", " tempStatIndex --- " + "  drawEndIndex = " + drawEndIndex + " drawStartIndex " + drawStartIndex + " showNumbers " + showNumbers);
         } else {
             if (tempStatIndex >= 0 && tempEndIndex <= dataSize) {
                 this.drawStartIndex = tempStatIndex;
@@ -357,7 +348,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     this.startX = 0;
                 }
             }
-            Log.i("###", "ZoomOut tempStatIndex =  " + tempStatIndex + " tempEndIndex =  " + tempEndIndex + " decimal " + decimal + " leftVariety " + leftVariety + " showNumbers = " + showNumbers);
         }
     }
 
@@ -441,13 +431,10 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
     @Override
     public void onLongPress(MotionEvent e) {
-        Log.i("###", "------onLongPress-------");
-
     }
 
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-        Log.i("###", "------onScroll-------  distanceX =" + distanceX + " distanceY = " + distanceY);
         boolean invalidate = scroll(distanceX);
         if (invalidate) {
             chartGesture = ChartGesture.DRAG;
@@ -458,7 +445,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-        Log.i("###", "------onFling-------");
         fling((int) e2.getX(), (int) -velocityX, (int) -velocityY);
         return true;
     }
@@ -527,17 +513,18 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     if (distanceDragX == 0) {
                         this.startX = 0;
                         this.drawStartIndex = this.drawStartIndex + 1;
+                        this.drawEndIndex = drawEndIndex + 1;
                     } else if (distanceDragX > 0) {
                         //当前坐标肯定发生了变化
                         float dragNumber = distanceDragX / this.cellWidth;
                         if (dragNumber > 1) {
                             this.startX = -distanceX % this.cellWidth;
                             this.drawEndIndex = drawEndIndex + (int) dragNumber + 1;
-                            this.drawStartIndex = drawEndIndex - showNumbers;
+                            this.drawStartIndex = drawStartIndex + 1;
                         } else {
                             this.startX = -distanceDragX;
                             this.drawEndIndex = drawEndIndex + 1;
-                            this.drawStartIndex = drawEndIndex - showNumbers;
+                            this.drawStartIndex = drawStartIndex + 1;
                         }
                     } else if (distanceDragX < 0) {
                         this.startX = startX - distanceX;
@@ -572,7 +559,6 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         if (mScroller.computeScrollOffset()) {
             int currX = mScroller.getCurrX();
             int distanceX = currX - flingCurrX;
-            Log.i("###", "------computeScroll------- distanceX " + distanceX);
             invalidate = scroll(distanceX);
             flingCurrX = currX;
         }

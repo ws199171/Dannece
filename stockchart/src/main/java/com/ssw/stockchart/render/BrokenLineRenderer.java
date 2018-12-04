@@ -133,7 +133,6 @@ public class BrokenLineRenderer extends BaseRenderer {
 
         getCoordinatePointFloat(point, drawData, drawScreenIndex);
 
-
         //如果第一次画,就把第一次作为起始点
         if (isFirstDraw) {
             linePath.moveTo(point.x, point.y);
