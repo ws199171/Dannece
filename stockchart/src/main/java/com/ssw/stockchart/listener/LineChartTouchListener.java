@@ -4,6 +4,7 @@ import android.graphics.PointF;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.ViewParent;
 
 import com.ssw.stockchart.widget.BaseCharView;
@@ -64,7 +65,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
     /**
      * 开始绘制的位置
      */
-    private float drawStatIndex = 0;
+    private float drawStartIndex = 0;
 
     /**
      * 结束绘制的位置
@@ -168,7 +169,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         //判断当前显示的数量和数据长度的大小
         if (nowShowNumber > charView.getData().dataSize()) {
             //当前需要绘制的数量，不足以完全铺满屏幕
-            this.drawStatIndex = 0;
+            this.drawStartIndex = 0;
             this.drawEndIndex = charView.getData().dataSize();
             this.startX = 0;
             if (this.charZoomState == BaseChartTouchListener.ChartZoomState.ZOOM_MIN) {
@@ -188,7 +189,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
             //如果是放大
             else if (chartGesture == BaseChartTouchListener.ChartGesture.ZOOM_OUT) {
                 computeZoomOutProcess(nowShowNumber, differenceShowNumber, scalingWeight, leftVariety, rightVariety, formerLeftVariety);
-                Log.i("###", " ZOOM_OUT  drawStatIndex  = " + drawStatIndex + " drawEndIndex = " + drawEndIndex);
+                Log.i("###", " ZOOM_OUT  drawStartIndex  = " + drawStartIndex + " drawEndIndex = " + drawEndIndex);
             }
         }
     }
@@ -213,18 +214,18 @@ public class LineChartTouchListener extends BaseChartTouchListener {
             }
             if (illegal) {
                 //检验下标的合法性
-                float showDifference = drawEndIndex - drawStatIndex;
+                float showDifference = drawEndIndex - drawStartIndex;
                 //下标发生错误需要纠正
                 float showVariety = CharView.MAX_KLINE_NUMBER - showDifference;
                 this.startX = 0;
-                float tempStatIndex = this.drawStatIndex - (int) Math.ceil(showVariety * scalingWeight);
+                float tempStatIndex = this.drawStartIndex - (int) Math.ceil(showVariety * scalingWeight);
                 Log.i("###", " tempStatIndex --- " + "  illegal = " + illegal + " tempStatIndex " + tempStatIndex);
                 if (tempStatIndex < 0) {
-                    drawStatIndex = 0;
+                    drawStartIndex = 0;
                 } else {
-                    drawStatIndex = tempStatIndex;
+                    drawStartIndex = tempStatIndex;
                 }
-                this.drawEndIndex = this.drawStatIndex + CharView.MAX_KLINE_NUMBER;
+                this.drawEndIndex = this.drawStartIndex + CharView.MAX_KLINE_NUMBER;
                 if (this.drawEndIndex >= charView.getData().dataSize()) {
                     this.drawEndIndex = charView.getData().dataSize();
                 }
@@ -234,12 +235,12 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                 boolean decimal = leftVariety > 0;
                 //左边显示的部分
                 int leftVarietyInt = (int) Math.ceil(leftVariety);
-                float tempStatIndex = this.drawStatIndex - (leftVarietyInt - (int) Math.ceil(formerLeftVariety));
+                float tempStatIndex = this.drawStartIndex - (leftVarietyInt - (int) Math.ceil(formerLeftVariety));
                 float tempEndIndex = tempStatIndex + showNumbers;
                 Log.i("###", " ZoomIn tempStatIndex =  " + tempStatIndex + " tempEndIndex =  " + tempEndIndex + " decimal " + decimal + " leftVariety " + leftVariety + " showNumbers = " + showNumbers);
                 computeZoomIn(tempStatIndex, tempEndIndex, decimal, leftVariety - leftVarietyInt);
             }
-            Log.i("###", "   ZOOM_IN  drawStatIndex  = " + drawStatIndex + " drawEndIndex = " + drawEndIndex);
+            Log.i("###", "   ZOOM_IN  drawStartIndex  = " + drawStartIndex + " drawEndIndex = " + drawEndIndex);
         }
     }
 
@@ -257,7 +258,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         //如果存在小数，小数部分的数值，将放到左边，右边保持完整
         if (decimal) {
             if (tempStatIndex >= 0 && tempEndIndex <= dataSize) {
-                this.drawStatIndex = tempStatIndex;
+                this.drawStartIndex = tempStatIndex;
                 this.drawEndIndex = tempEndIndex;
                 this.startX = this.cellWidth * (decimalShow - 1);
             } else {
@@ -266,16 +267,16 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     this.drawEndIndex = dataSize;
                     float dicStatIndex = this.drawEndIndex - this.showNumbers;
                     if (dicStatIndex >= 0) {
-                        this.drawStatIndex = dicStatIndex;
+                        this.drawStartIndex = dicStatIndex;
                         this.startX = this.cellWidth * (decimalShow - 1);
                     } else {
-                        this.drawStatIndex = 0;
+                        this.drawStartIndex = 0;
                         this.startX = 0;
                     }
                 } else if (tempStatIndex < 0) {
-                    this.drawStatIndex = 0;
+                    this.drawStartIndex = 0;
                     this.startX = 0;
-                    float dicEndIndex = this.drawStatIndex + this.showNumbers;
+                    float dicEndIndex = this.drawStartIndex + this.showNumbers;
                     if (dicEndIndex <= dataSize) {
                         this.drawEndIndex = dicEndIndex;
                     } else {
@@ -283,10 +284,10 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     }
                 }
             }
-            Log.i("###", " tempStatIndex --- " + "  drawEndIndex = " + drawEndIndex + " drawStatIndex " + drawStatIndex + " showNumbers " + showNumbers);
+            Log.i("###", " tempStatIndex --- " + "  drawEndIndex = " + drawEndIndex + " drawStartIndex " + drawStartIndex + " showNumbers " + showNumbers);
         } else {
             if (tempStatIndex >= 0 && tempEndIndex <= dataSize) {
-                this.drawStatIndex = tempStatIndex;
+                this.drawStartIndex = tempStatIndex;
                 this.drawEndIndex = tempEndIndex;
             } else {
                 //发生缩小越界错误
@@ -294,13 +295,13 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                     this.drawEndIndex = dataSize;
                     float dicStatIndex = this.drawEndIndex - this.showNumbers;
                     if (dicStatIndex >= 0) {
-                        this.drawStatIndex = dicStatIndex;
+                        this.drawStartIndex = dicStatIndex;
                     } else {
-                        this.drawStatIndex = 0;
+                        this.drawStartIndex = 0;
                     }
                 } else if (tempStatIndex < 0) {
-                    this.drawStatIndex = 0;
-                    float dicEndIndex = this.drawStatIndex + this.showNumbers;
+                    this.drawStartIndex = 0;
+                    float dicEndIndex = this.drawStartIndex + this.showNumbers;
                     if (dicEndIndex <= dataSize) {
                         this.drawEndIndex = dicEndIndex;
                     } else {
@@ -328,30 +329,30 @@ public class LineChartTouchListener extends BaseChartTouchListener {
             illegal = true;
         }
         if (illegal) {
-            float showDifference = drawEndIndex - drawStatIndex;
+            float showDifference = drawEndIndex - drawStartIndex;
             //下标发生错误需要纠正
             float showVariety = showDifference - CharView.MIN_KLINE_NUMBER;
             this.startX = 0;
-            this.drawStatIndex = this.drawStatIndex + (int) Math.ceil(showVariety * scalingWeight);
-            this.drawEndIndex = this.drawStatIndex + CharView.MIN_KLINE_NUMBER;
+            this.drawStartIndex = this.drawStartIndex + (int) Math.ceil(showVariety * scalingWeight);
+            this.drawEndIndex = this.drawStartIndex + CharView.MIN_KLINE_NUMBER;
             this.showNumbers = CharView.MIN_KLINE_NUMBER;
         } else {
             //是否存在小数
             float decimalShow = leftVariety - (int) leftVariety;
             boolean decimal = decimalShow > 0;
             //左边显示的部分
-            float tempStatIndex = this.drawStatIndex + ((int) Math.ceil(formerLeftVariety) - (int) Math.ceil(leftVariety));
+            float tempStatIndex = this.drawStartIndex + ((int) Math.ceil(formerLeftVariety) - (int) Math.ceil(leftVariety));
             float tempEndIndex = tempStatIndex + showNumbers;
             //如果存在小数，小数部分的数值，将放到左边，右边保持完整
             if (decimal) {
                 if ((tempEndIndex - tempStatIndex) >= CharView.MIN_KLINE_NUMBER) {
-                    this.drawStatIndex = tempStatIndex;
+                    this.drawStartIndex = tempStatIndex;
                     this.drawEndIndex = tempEndIndex;
                     this.startX = this.cellWidth * (decimalShow - 1);
                 }
             } else {
                 if ((tempEndIndex - tempStatIndex) >= CharView.MIN_KLINE_NUMBER) {
-                    this.drawStatIndex = tempStatIndex;
+                    this.drawStartIndex = tempStatIndex;
                     this.drawEndIndex = tempEndIndex;
                     this.startX = 0;
                 }
@@ -370,7 +371,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
     public void resetTouchData(float... info) {
         super.resetTouchData(info);
         this.cellWidth = info[0];
-        this.drawStatIndex = info[1];
+        this.drawStartIndex = info[1];
         this.drawEndIndex = info[2];
         this.showNumbers = info[3];
         this.startX = info[4];
@@ -429,9 +430,19 @@ public class LineChartTouchListener extends BaseChartTouchListener {
     }
 
     @Override
+    public void onShowPress(MotionEvent e) {
+
+    }
+
+    @Override
+    public boolean onSingleTapUp(MotionEvent e) {
+        return false;
+    }
+
+    @Override
     public void onLongPress(MotionEvent e) {
         Log.i("###", "------onLongPress-------");
-        super.onLongPress(e);
+
     }
 
     @Override
@@ -466,106 +477,88 @@ public class LineChartTouchListener extends BaseChartTouchListener {
     public boolean scroll(float distanceX) {
         if (distanceX < 0) {
             //向右滑动
-            if (drawStatIndex == 0) {
-                //已经是左极限
-                return false;
-            } else {
-                if (startX == 0) {
-                    float dragNumber = (-distanceX) / this.cellWidth;
+            if (drawStartIndex > 0) {
+                float distanceDragX = distanceX - startX;
+                if (distanceDragX < 0) {
+                    //如果  < 0 证明当前 drawStartIndex 已经发生了变化，需要调整大小
+                    float dragNumber = -distanceDragX / this.cellWidth;
                     if (dragNumber > 1) {
                         //拖动的条目数大于1
                         int number = (int) dragNumber;
                         float distance = dragNumber - number;
                         this.startX = this.cellWidth * (distance - 1);
-                        this.drawStatIndex = drawStatIndex - number;
+                        this.drawStartIndex = drawStartIndex - number;
                         this.drawEndIndex = drawEndIndex - number;
                     } else {
-                        this.startX = distanceX;
-                        this.drawStatIndex = drawStatIndex - 1;
+                        this.startX = -this.cellWidth - distanceDragX;
+                        this.drawStartIndex = drawStartIndex - 1;
                         this.drawEndIndex = drawEndIndex - 1;
                     }
+                } else if (distanceDragX == 0) {
+                    this.startX = 0;
                 } else {
-                    float distanceDragX = distanceX - startX;
-                    if (distanceDragX < 0) {
-                        //如果  < 0 证明当前 drawStatIndex 已经发生了变化，需要调整大小
-                        float dragNumber = (-distanceX) / this.cellWidth;
-                        if (dragNumber > 1) {
-                            //拖动的条目数大于1
-                            int number = (int) dragNumber;
-                            float distance = dragNumber - number;
-                            this.startX = this.cellWidth * (distance - 1);
-                            this.drawStatIndex = drawStatIndex - number;
-                            this.drawEndIndex = drawEndIndex - number;
-                        } else {
-                            this.startX = distanceDragX;
-                            this.drawStatIndex = drawStatIndex - 1;
-                            this.drawEndIndex = drawEndIndex - 1;
-                        }
-                    } else if (distanceDragX == 0) {
+                    this.startX = -distanceDragX;
+                }
+            }
+            //校验是否越界
+            if (drawStartIndex == 0) {
+                drawStartIndex = 0;
+                drawEndIndex = drawStartIndex + showNumbers;
+                //当滑动到最左边时特殊处理，达到平滑的效果
+                if (this.startX < 0) {
+                    this.startX = this.startX - distanceX;
+                    if (this.startX > 0) {
                         this.startX = 0;
-                    } else {
-                        this.startX = -distanceDragX;
                     }
                 }
-                //校验是否越界
-                if (drawStatIndex < 0) {
-                    drawStatIndex = 0;
-                    drawEndIndex = drawStatIndex + showNumbers;
-                    this.startX = 0;
-                }
+            } else if (drawStartIndex < 0) {
+                drawStartIndex = 0;
+                drawEndIndex = drawStartIndex + showNumbers;
+                this.startX = 0;
             }
         } else {
             //向左滑动
-            if (drawEndIndex >= charView.getData().dataSize()) {
-                //已经是右极限
-                return false;
-            } else {
+            if (drawEndIndex < charView.getData().dataSize()) {
                 //未发生下标变化，只需要修改偏移
                 if (distanceX < (cellWidth + startX)) {
                     startX = startX - distanceX;
                 } else {
-                    if (startX == 0) {
-                        float dragNumber = distanceX / this.cellWidth;
-                        float numberDecimal = dragNumber - (int) dragNumber;
-                        if (numberDecimal > 0) {
+                    float distanceDragX = distanceX - (cellWidth + startX);
+                    if (distanceDragX == 0) {
+                        this.startX = 0;
+                        this.drawStartIndex = this.drawStartIndex + 1;
+                    } else if (distanceDragX > 0) {
+                        //当前坐标肯定发生了变化
+                        float dragNumber = distanceDragX / this.cellWidth;
+                        if (dragNumber > 1) {
                             this.startX = -distanceX % this.cellWidth;
-                            this.drawStatIndex = drawStatIndex + (int) dragNumber + 1;
                             this.drawEndIndex = drawEndIndex + (int) dragNumber + 1;
+                            this.drawStartIndex = drawEndIndex - showNumbers;
                         } else {
-                            this.startX = 0;
-                            this.drawStatIndex = drawStatIndex + dragNumber;
-                            this.drawEndIndex = drawEndIndex + dragNumber;
-                        }
-                    } else {
-                        float distanceDragX = distanceX - (cellWidth + startX);
-                        if (distanceDragX == 0) {
-                            this.startX = 0;
-                            this.drawStatIndex = drawStatIndex + 1;
+                            this.startX = -distanceDragX;
                             this.drawEndIndex = drawEndIndex + 1;
-                        } else if (distanceDragX > 0) {
-                            //当前坐标肯定发生了变化
-                            float dragNumber = distanceDragX / this.cellWidth;
-                            float numberDecimal = dragNumber - (int) dragNumber;
-                            if (numberDecimal > 0) {
-                                this.startX = -distanceX % this.cellWidth;
-                                this.drawStatIndex = drawStatIndex + (int) dragNumber + 2;
-                                this.drawEndIndex = drawEndIndex + (int) dragNumber + 2;
-                            } else {
-                                this.startX = 0;
-                                this.drawStatIndex = drawStatIndex + dragNumber + 1;
-                                this.drawEndIndex = drawEndIndex + dragNumber + 1;
-                            }
-                        } else if (distanceDragX < 0) {
-                            this.startX = startX - distanceX;
+                            this.drawStartIndex = drawEndIndex - showNumbers;
                         }
+                    } else if (distanceDragX < 0) {
+                        this.startX = startX - distanceX;
                     }
                 }
             }
 
             //校验是否越界
-            if (drawEndIndex >= charView.getData().dataSize()) {
+            if (drawEndIndex == charView.getData().dataSize()) {
                 drawEndIndex = charView.getData().dataSize();
-                drawStatIndex = drawEndIndex - showNumbers;
+                drawStartIndex = drawEndIndex - showNumbers;
+                //当滑动到最左边时特殊处理，达到平滑的效果
+                if (this.startX < 0) {
+                    this.startX = this.startX + distanceX;
+                    if (this.startX > 0) {
+                        this.startX = 0;
+                    }
+                }
+            }else if (drawEndIndex > charView.getData().dataSize()){
+                drawEndIndex = charView.getData().dataSize();
+                drawStartIndex = drawEndIndex - showNumbers;
                 this.startX = 0;
             }
         }
@@ -595,7 +588,8 @@ public class LineChartTouchListener extends BaseChartTouchListener {
      */
     private void invalidateChart(boolean invalidate) {
         if (charView != null) {
-            charView.resetDrawData(invalidate, this.cellWidth, this.drawStatIndex, this.drawEndIndex, this.showNumbers, this.startX);
+            charView.resetDrawData(invalidate, this.cellWidth, this.drawStartIndex, this.drawEndIndex, this.showNumbers, this.startX);
         }
     }
+
 }

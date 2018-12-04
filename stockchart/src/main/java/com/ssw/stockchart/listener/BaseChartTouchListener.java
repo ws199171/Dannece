@@ -5,13 +5,16 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.widget.OverScroller;
 
+import com.ssw.stockchart.render.BaseRenderer;
 import com.ssw.stockchart.widget.BaseCharView;
+
+import java.lang.reflect.Field;
 
 
 /**
  * @author saisai
  */
-public abstract class BaseChartTouchListener<T extends BaseCharView<?>> extends GestureDetector.SimpleOnGestureListener {
+public abstract class BaseChartTouchListener<T extends BaseCharView<?>> implements  GestureDetector.OnGestureListener {
 
     /**
      * 先关图表
@@ -23,6 +26,7 @@ public abstract class BaseChartTouchListener<T extends BaseCharView<?>> extends 
      */
     protected GestureDetector gestureDetector;
 
+
     /**
      * 滑动计算
      */
@@ -33,10 +37,27 @@ public abstract class BaseChartTouchListener<T extends BaseCharView<?>> extends 
      */
     private boolean initialData = false;
 
+    @SuppressWarnings("JavaReflectionMemberAccess")
     public BaseChartTouchListener(@NonNull BaseCharView charView) {
         this.charView = charView;
         this.mScroller = new OverScroller(this.charView.getContext());
         this.gestureDetector = new GestureDetector(this.charView.getContext(), this);
+
+        try {
+            Field touchSlopSquare = GestureDetector.class.getField("mTouchSlopSquare");
+            Field doubleTapTouchSlopSquare = GestureDetector.class.getField("mDoubleTapTouchSlopSquare");
+            Field doubleTapSlopSquare = GestureDetector.class.getField("mDoubleTapSlopSquare");
+            touchSlopSquare.setAccessible(true);
+            doubleTapTouchSlopSquare.setAccessible(true);
+            doubleTapSlopSquare.setAccessible(true);
+            int square = (int) BaseRenderer.dpToPx(charView.getContext(), 1);
+            touchSlopSquare.setInt(this.gestureDetector, square);
+            doubleTapTouchSlopSquare.setInt(this.gestureDetector, square);
+            doubleTapSlopSquare.setInt(this.gestureDetector, square);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     /**
