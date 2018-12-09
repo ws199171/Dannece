@@ -10,6 +10,7 @@ import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ViewParent;
 
 import com.ssw.stockchart.listener.LineChartTouchListener;
 import com.ssw.stockchart.render.BaseRenderer;
@@ -162,14 +163,14 @@ public class CharView extends BaseCharView {
 
     @Override
     public void resetDrawData(boolean invalidate, float... info) {
-        if (invalidate) {
-            ViewCompat.postInvalidateOnAnimation(this);
-        }
         this.cellWidth = info[0];
         this.drawStatIndex = info[1];
         this.drawEndIndex = info[2];
         this.showNumbers = info[3];
         this.startX = info[4];
+        if (invalidate) {
+            invalidate();
+        }
     }
 
     @Override
@@ -233,11 +234,10 @@ public class CharView extends BaseCharView {
                 }
             }
         }
+        long end = System.currentTimeMillis();
+        Log.i("@@@", "*------chart---draw-----end---" + (end - begin) + " drawStatIndex " + drawStatIndex + " drawEndIndex " + drawEndIndex + "  startX " + startX);
         canvas.restoreToCount(clipRestoreCount);
 
-        long end = System.currentTimeMillis();
-
-        Log.i("@@@", "*------chart---draw-----end---" + (end - begin) + " drawStatIndex " + drawStatIndex + " drawEndIndex " + drawEndIndex + "  startX " + startX);
     }
 
     /**
@@ -252,7 +252,6 @@ public class CharView extends BaseCharView {
             this.cellWidth = cellWidth;
         }
     }
-
 
     @SuppressLint("ClickableViewAccessibility")
     @Override

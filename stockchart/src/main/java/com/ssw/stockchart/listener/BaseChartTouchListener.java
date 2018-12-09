@@ -42,24 +42,7 @@ public abstract class BaseChartTouchListener<T extends BaseCharView<?>> implemen
         this.charView = charView;
         this.mScroller = new OverScroller(this.charView.getContext());
         this.gestureDetector = new GestureDetector(this.charView.getContext(), this);
-
-        try {
-            Field touchSlopSquare = GestureDetector.class.getField("mTouchSlopSquare");
-            Field doubleTapTouchSlopSquare = GestureDetector.class.getField("mDoubleTapTouchSlopSquare");
-            Field doubleTapSlopSquare = GestureDetector.class.getField("mDoubleTapSlopSquare");
-            touchSlopSquare.setAccessible(true);
-            doubleTapTouchSlopSquare.setAccessible(true);
-            doubleTapSlopSquare.setAccessible(true);
-            int square = (int) BaseRenderer.dpToPx(charView.getContext(), 1);
-            touchSlopSquare.setInt(this.gestureDetector, square);
-            doubleTapTouchSlopSquare.setInt(this.gestureDetector, square);
-            doubleTapSlopSquare.setInt(this.gestureDetector, square);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
     }
-
     /**
      * 当前手势状态
      */

@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.View;
+import android.view.ViewParent;
 
 import com.ssw.stockchart.data.BaseCharData;
 import com.ssw.stockchart.listener.BaseChartTouchListener;
@@ -139,12 +140,14 @@ public abstract class BaseCharView<T extends BaseCharData> extends View {
     public BaseCharView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         this.mContext = context;
+        setLayerType(LAYER_TYPE_HARDWARE, null);
         mMetrics = context.getResources().getDisplayMetrics();
         this.mBackgroundPaint = new Paint();
         this.mBackgroundPaint.setAntiAlias(true);
         this.mBackgroundPaint.setColor(Color.GRAY);
         this.mBackgroundPaint.setStrokeWidth(1.5f);
         this.mBackgroundPaint.setStyle(Paint.Style.STROKE);
+        setLayerType(LAYER_TYPE_SOFTWARE, mBackgroundPaint);
     }
 
     public float dp2Px(float dp) {
@@ -353,6 +356,13 @@ public abstract class BaseCharView<T extends BaseCharData> extends View {
      * @param info       - 相关数据
      */
     public abstract void resetDrawData(boolean invalidate, float... info);
+
+    public void disableScroll() {
+        ViewParent parent = getParent();
+        if (parent != null) {
+            parent.requestDisallowInterceptTouchEvent(true);
+        }
+    }
 
     /**
      * 设置股票类型

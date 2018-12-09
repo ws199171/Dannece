@@ -2,9 +2,11 @@ package com.ssw.stockchart.listener;
 
 import android.graphics.PointF;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewParent;
 
+import com.ssw.stockchart.render.BaseRenderer;
 import com.ssw.stockchart.widget.BaseCharView;
 import com.ssw.stockchart.widget.CharView;
 
@@ -28,7 +30,13 @@ public class LineChartTouchListener extends BaseChartTouchListener {
      */
     private float mMinScalePointerDistance;
 
+    /**
+     * 记录开始点击的点
+     */
+    private PointF mTouchStartPoint = new PointF();
+
     private float mSavedXDist = 1f;
+    private float mSavedDist = 1f;
 
     /**
      * X轴偏移量
@@ -80,9 +88,14 @@ public class LineChartTouchListener extends BaseChartTouchListener {
      */
     private PointF mTouchPointCenter = new PointF();
 
+    private float mDragTriggerDist;
+
+    private float lastMoveX = 0f;
+
 
     public LineChartTouchListener(@NonNull BaseCharView charView) {
         super(charView);
+        mDragTriggerDist = BaseRenderer.dpToPx(charView.getContext(), 3);
     }
 
     /**
@@ -120,6 +133,17 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         float y = event.getY(0) + event.getY(1);
         point.x = (x / 2f);
         point.y = (y / 2f);
+    }
+
+    private void saveTouchStart(MotionEvent event) {
+        mTouchStartPoint.x = event.getX();
+        mTouchStartPoint.y = event.getY();
+    }
+
+    protected static float distance(float eventX, float startX, float eventY, float startY) {
+        float dx = eventX - startX;
+        float dy = eventY - startY;
+        return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
     /**
@@ -369,34 +393,59 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        gestureDetector.onTouchEvent(event);
+        // gestureDetector.onTouchEvent(event);
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                mSavedXDist = getXDist(event);
-                midPoint(mTouchPointCenter, event);
+                if (event.getPointerCount() >= 2) {
+                    saveTouchStart(event);
+                    mSavedXDist = getXDist(event);
+                    mSavedDist = spacing(event);
+                    if (mSavedDist > 10) {
+                        chartGesture = ChartGesture.ZOOM_NONE;
+                    }
+                    midPoint(mTouchPointCenter, event);
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
-                ViewParent parent = charView.getParent();
-                if (parent != null) {
-                    parent.requestDisallowInterceptTouchEvent(true);
-                }
-                if (event.getPointerCount() >= 2) {
-                    float totalDist = spacing(event);
-                    if (totalDist > mMinScalePointerDistance) {
-                        float xDist = getXDist(event);
-                        float scaleX = xDist / mSavedXDist;
-                        if (scaleX > 1) {
-                            //放大
-                            chartGesture = ChartGesture.ZOOM_OUT;
-                        } else {
-                            //缩小
-                            chartGesture = ChartGesture.ZOOM_IN;
+                switch (chartGesture) {
+                    case DRAG:
+                        charView.disableScroll();
+                        float distanceX = event.getX() - lastMoveX;
+                        performScroll(-distanceX);
+                        lastMoveX = event.getX();
+                        break;
+                    case ZOOM_IN:
+                    case ZOOM_OUT:
+                    case ZOOM_NONE:
+                        charView.disableScroll();
+                        if (event.getPointerCount() >= 2) {
+                            float totalDist = spacing(event);
+                            if (totalDist > mMinScalePointerDistance) {
+                                float xDist = getXDist(event);
+                                float scaleX = xDist / mSavedXDist;
+                                if (scaleX > 1) {
+                                    //放大
+                                    chartGesture = ChartGesture.ZOOM_OUT;
+                                } else {
+                                    //缩小
+                                    chartGesture = ChartGesture.ZOOM_IN;
+                                }
+                                computeCellWidth(mTouchPointCenter.x, scaleX);
+                                invalidateChart(true);
+                            }
                         }
-                        computeCellWidth(mTouchPointCenter.x, scaleX);
-                        invalidateChart(true);
-                    }
+                        break;
+                    case NONE:
+                        if (Math.abs(distance(event.getX(), mTouchStartPoint.x, event.getY(),
+                                mTouchStartPoint.y)) > mDragTriggerDist) {
+                            chartGesture = ChartGesture.DRAG;
+                            lastMoveX = event.getX();
+                        }
+                        break;
+                    default:
+                        break;
                 }
                 break;
             case MotionEvent.ACTION_UP:
@@ -435,12 +484,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
 
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-        boolean invalidate = scroll(distanceX);
-        if (invalidate) {
-            chartGesture = ChartGesture.DRAG;
-            invalidateChart(true);
-        }
-        return invalidate;
+        return performScroll(distanceX);
     }
 
     @Override
@@ -456,7 +500,24 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         flingCurrX = startX;
         mScroller.forceFinished(true);
         mScroller.fling(startX, 0, velocityX, 0, 1, 100 * 1000, 0, 0);
+        Log.i("###", "---------fling start-------- startX " + startX + "  velocityX " + velocityX);
         invalidateChart(true);
+    }
+
+
+    /**
+     * 滑动逻辑封装
+     *
+     * @param distanceX -
+     * @return -
+     */
+    private boolean performScroll(float distanceX) {
+        boolean invalidate = scroll(distanceX);
+        if (invalidate) {
+            chartGesture = ChartGesture.DRAG;
+            invalidateChart(true);
+        }
+        return invalidate;
     }
 
     @Override
@@ -543,7 +604,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
                         this.startX = 0;
                     }
                 }
-            }else if (drawEndIndex > charView.getData().dataSize()){
+            } else if (drawEndIndex > charView.getData().dataSize()) {
                 drawEndIndex = charView.getData().dataSize();
                 drawStartIndex = drawEndIndex - showNumbers;
                 this.startX = 0;
@@ -559,6 +620,7 @@ public class LineChartTouchListener extends BaseChartTouchListener {
         if (mScroller.computeScrollOffset()) {
             int currX = mScroller.getCurrX();
             int distanceX = currX - flingCurrX;
+            Log.i("###", "---------fling scrolling-------- currX " + currX + "  distanceX " + distanceX);
             invalidate = scroll(distanceX);
             flingCurrX = currX;
         }
